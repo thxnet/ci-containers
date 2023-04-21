@@ -1,0 +1,75 @@
+name: Build images
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - v*
+  pull_request:
+
+env:
+  CI: 1
+
+concurrency:
+  group: image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image:
+    name: Build and publish images
+    runs-on: [self-hosted, linux, x64]
+    strategy:
+      fail-fast: false
+      matrix:
+        mode:
+          - release
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: "true"
+
+      - name: Install docker-buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          version: latest
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Setup container metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: 886360478228.dkr.ecr.us-west-2.amazonaws.com/ci-containers/substrate-based
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=edge
+            type=raw,enable=${{ github.event_name != 'pull_request' && !contains(github.ref, 'refs/tags/') }},value=build-{{date 'YYYY.MM.DD'}}-{{sha}}
+          flavor: |
+            latest=auto
+          bake-target: substrate-based
+
+      - name: Build container image
+        uses: docker/bake-action@v3
+        with:
+          pull: true
+          push: true
+          files: |
+            ./docker-bake.hcl
+            ${{ steps.meta.outputs.bake-file }}
+          targets: substrate-based
