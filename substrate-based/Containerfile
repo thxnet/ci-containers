@@ -1,0 +1,82 @@
+# syntax=docker/dockerfile:1.4
+FROM ubuntu:22.04 as substrate-based
+
+WORKDIR /build
+
+ENV SHELL /bin/bash
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH \
+    CC=clang-16 \
+    CXX=clang-16
+ENV RUST_NIGHTLY_TOOLCHAIN="2022-11-16"
+
+# config for wasm32-unknown-unknown & clang
+COPY <<EOF /root/.cargo/config
+[target.wasm32-unknown-unknown]
+runner = "node"
+linker="clang-16"
+
+[target.x86_64-unknown-linux-gnu]
+# Enables the aes-ni instructions for RustCrypto dependency.
+rustflags = ["-Ctarget-feature=+aes,+sse2,+ssse3"]
+# setup clang as Linker
+linker="clang-16"
+
+EOF
+
+RUN <<EOF
+#!/usr/bin/env bash
+
+set -eux
+
+apt-get update -y
+apt-get upgrade -y
+apt-get install -y --no-install-recommends \
+    libssl-dev make cmake git pkg-config curl ca-certificates jq \
+    xz-utils zstd unzip gnupg protobuf-compiler
+
+curl https://apt.llvm.org/llvm-snapshot.gpg.key -o /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+
+# install clang-16
+echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main" >> /etc/apt/sources.list.d/llvm-toochain-jammy-16.list; \
+echo "deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main" >> /etc/apt/sources.list.d/llvm-toochain-jammy-16.list; \
+
+apt-get update -y
+apt-get install -y --no-install-recommends \
+    clang-16 libclang-16-dev mold
+
+# add non-root user
+groupadd -g 1000 nonroot
+useradd -u 1000 -g 1000 -s /bin/bash -m nonroot
+
+update-alternatives --install /usr/bin/cc cc /usr/bin/clang-16 100
+update-alternatives --install /usr/bin/ld ld /usr/bin/mold 100
+
+# install rustup, use minimum components
+curl -L "https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init" -o rustup-init
+chmod +x rustup-init
+./rustup-init -y --no-modify-path --profile minimal --default-toolchain nightly-${RUST_NIGHTLY_TOOLCHAIN}
+rm rustup-init
+
+chown -R root:nonroot ${RUSTUP_HOME} ${CARGO_HOME}
+chmod -R g+w ${RUSTUP_HOME} ${CARGO_HOME}
+
+rustup show
+
+cargo --version
+rustc --version
+
+# cargo clean up
+# removes compilation artifacts cargo install creates (>250M)
+rm -rf "${CARGO_HOME}/registry" "${CARGO_HOME}/git" /root/.cache/sccache
+
+# apt clean up
+apt-get autoremove -y
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+
+EOF
+
+# show backtraces
+ENV RUST_BACKTRACE=1
