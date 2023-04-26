@@ -7,21 +7,21 @@ ENV SHELL /bin/bash
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
     PATH=/usr/local/cargo/bin:$PATH \
-    CC=clang-16 \
-    CXX=clang-16
+    CC=clang-15 \
+    CXX=clang-15
 ENV RUST_NIGHTLY_TOOLCHAIN="2022-11-16"
 
 # config for wasm32-unknown-unknown & clang
 COPY <<EOF /root/.cargo/config
 [target.wasm32-unknown-unknown]
 runner = "node"
-linker="clang-16"
+linker="clang-15"
 
 [target.x86_64-unknown-linux-gnu]
 # Enables the aes-ni instructions for RustCrypto dependency.
 rustflags = ["-Ctarget-feature=+aes,+sse2,+ssse3"]
 # setup clang as Linker
-linker="clang-16"
+linker="clang-15"
 
 EOF
 
@@ -38,19 +38,19 @@ apt-get install -y --no-install-recommends \
 
 curl https://apt.llvm.org/llvm-snapshot.gpg.key -o /etc/apt/trusted.gpg.d/apt.llvm.org.asc
 
-# install clang-16
-echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main" >> /etc/apt/sources.list.d/llvm-toochain-jammy-16.list; \
-echo "deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main" >> /etc/apt/sources.list.d/llvm-toochain-jammy-16.list; \
+# install clang-15
+echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-15 main" >> /etc/apt/sources.list.d/llvm-toochain-jammy-15.list; \
+echo "deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-15 main" >> /etc/apt/sources.list.d/llvm-toochain-jammy-15.list; \
 
 apt-get update -y
 apt-get install -y --no-install-recommends \
-    clang-16 libclang-16-dev mold
+    clang-15 libclang-15-dev mold
 
 # add non-root user
 groupadd -g 1000 nonroot
 useradd -u 1000 -g 1000 -s /bin/bash -m nonroot
 
-update-alternatives --install /usr/bin/cc cc /usr/bin/clang-16 100
+update-alternatives --install /usr/bin/cc cc /usr/bin/clang-15 100
 update-alternatives --install /usr/bin/ld ld /usr/bin/mold 100
 
 # install rustup, use minimum components
