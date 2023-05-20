@@ -12,7 +12,6 @@ on:
 env:
   CI: 1
   REGISTRY: ghcr.io
-                                      
 
 concurrency:
   group: image-${{ github.ref }}
