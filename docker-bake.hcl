@@ -1,20 +1,31 @@
 variable "TAG" {
-    default = "develop"
+  default = "develop"
 }
 
-variable "REPOSITORY" {
-    default = "ghcr.io"
+variable "CONTAINER_REGISTRY" {
+  default = "ghcr.io/thxnet/ci-containers"
 }
 
 group "default" {
-    targets = [
-        "substrate-based",
-    ]
+  targets = [
+    "substrate-based",
+    "sccache",
+  ]
 }
 
 target "substrate-based" {
-    dockerfile = "substrate-based/Containerfile"
-    platforms = ["linux/amd64"]
-    target = "substrate-based"
-    tags = ["${REPOSITORY}/ci-containers/substrate-based:${TAG}"]
+  dockerfile = "substrate-based/Containerfile"
+  target     = "substrate-based"
+  tags       = ["${CONTAINER_REGISTRY}/substrate-based:${TAG}"]
+  platforms  = ["linux/amd64"]
+}
+
+target "sccache" {
+  dockerfile = "sccache/Containerfile"
+  target     = "sccache"
+  args = {
+    SCCACHE_VERSION = "v0.5.4"
+  }
+  tags      = ["${CONTAINER_REGISTRY}/sccache:0.5.4"]
+  platforms = ["linux/amd64"]
 }
