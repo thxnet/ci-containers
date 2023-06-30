@@ -1,15 +1,21 @@
 # syntax=docker/dockerfile:1.4
-FROM ubuntu:22.04 as substrate-based
+
+FROM sccache AS sccache
+
+FROM ubuntu AS substrate-based
+
+COPY --from=sccache /usr/bin/sccache /usr/bin/sccache
 
 WORKDIR /build
 
-ENV SHELL /bin/bash
+ARG RUST_NIGHTLY_TOOLCHAIN="2022-11-16"
+
+ENV SHELL=/bin/bash
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
     PATH=/usr/local/cargo/bin:$PATH \
     CC=clang-15 \
     CXX=clang-15
-ENV RUST_NIGHTLY_TOOLCHAIN="2022-11-16"
 
 # config for wasm32-unknown-unknown & clang
 COPY <<EOF /root/.cargo/config
@@ -64,6 +70,7 @@ chmod -R g+w ${RUSTUP_HOME} ${CARGO_HOME}
 
 rustup show
 
+sccache --version
 cargo --version
 rustc --version
 
