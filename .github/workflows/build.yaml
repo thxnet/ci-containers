@@ -68,7 +68,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}/sccache
           tags: |
-            0.5.4
+            0.14.0
           flavor: |
             latest=auto
           bake-target: sccache

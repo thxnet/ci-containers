@@ -35,8 +35,8 @@ target "sccache" {
     distroless = "docker-image://gcr.io/distroless/cc-debian11:latest"
   }
   args = {
-    SCCACHE_VERSION = "v0.5.4"
+    SCCACHE_VERSION = "v0.14.0"
   }
-  tags      = ["${CONTAINER_REGISTRY}/sccache:0.5.4"]
+  tags      = ["${CONTAINER_REGISTRY}/sccache:0.14.0"]
   platforms = ["linux/amd64"]
 }

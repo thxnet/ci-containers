@@ -1,6 +1,6 @@
 FROM alpine AS builder
 
-ARG SCCACHE_VERSION=v0.5.4
+ARG SCCACHE_VERSION=v0.14.0
 
 RUN <<EOF
 #!/usr/bin/env sh
