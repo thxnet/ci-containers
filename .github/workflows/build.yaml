@@ -9,6 +9,10 @@ on:
       - v*
   pull_request:
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   CI: 1
   REGISTRY: ghcr.io
